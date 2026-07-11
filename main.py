@@ -2,6 +2,8 @@ import os
 import telebot
 from collections import defaultdict
 import google.generativeai as genai
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import threading
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -23,7 +25,19 @@ model = genai.GenerativeModel(
 )
 
 user_memories = defaultdict(list)
-MAX_MEMORY_ROUNDS = 6  # 限制保留最近 6 轮对话
+MAX_MEMORY_ROUNDS = 6  
+
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"Bot is alive!")
+
+def run_health_check():
+    port = int(os.getenv("PORT", 8080))
+    server = HTTPServer(('0.0.0.0', port), HealthCheckHandler)
+    server.serve_forever()
 
 @bot.message_handler(commands=['start', 'reset'])
 def send_welcome(message):
@@ -67,5 +81,7 @@ def chat_with_gemini(message):
         bot.reply_to(message, f"Learning Assistant Notice: {str(e)}")
 
 if __name__ == '__main__':
+    print("Starting health check server...")
+    threading.Thread(target=run_health_check, daemon=True).start()
     print("Gemini English Tutor Bot is running...")
     bot.infinity_polling()
