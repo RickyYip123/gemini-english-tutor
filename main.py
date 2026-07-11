@@ -42,6 +42,8 @@ def chat_with_gemini(message):
 
 
     history = user_memories[chat_id]
+    if len(user_memories[chat_id]) > (MAX_MEMORY_ROUNDS * 2):
+    user_memories[chat_id] = user_memories[chat_id][-(MAX_MEMORY_ROUNDS * 2):]
     
     try:
     
