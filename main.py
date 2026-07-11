@@ -1,21 +1,15 @@
 import os
 import telebot
 from collections import defaultdict
-import google.generativeai as genai
+import requests
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import threading
-
-
-os.environ["GOOGLE_GENAI_API_VERSION"] = "v1"
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
-genai.configure(api_key=GEMINI_API_KEY)
 
-
-model = genai.GenerativeModel(model_name='gemini-1.5-flash')
 
 user_memories = defaultdict(list)
 MAX_MEMORY_ROUNDS = 6  
@@ -51,9 +45,10 @@ def send_welcome(message):
         "（注意：不要长篇大论讲解语法，只给地道句子，保持对话流畅。）"
     )
     
+    
     user_memories[chat_id] = [
-        {"role": "user", "parts": [prompt_setup]},
-        {"role": "model", "parts": ["Understood. I will act as a patient English tutor, correct your mistakes in Chinese with bold text, and keep our chat natural and fun! Let's chat! How was your day today?"]}
+        {"role": "user", "parts": [{"text": prompt_setup}]},
+        {"role": "model", "parts": [{"text": "Understood. I will act as a patient English tutor, correct your mistakes in Chinese with bold text, and keep our chat natural and fun! Let's chat! How was your day today?"}]}
     ]
     bot.reply_to(message, welcome_text)
 
@@ -63,29 +58,48 @@ def chat_with_gemini(message):
     user_text = message.text
 
     if chat_id not in user_memories or not user_memories[chat_id]:
-        user_memories[chat_id] = []
+        
+        send_welcome(message)
+        return
 
-    history = user_memories[chat_id]
+   
+    user_memories[chat_id].append({"role": "user", "parts": [{"text": user_text}]})
     
+   
+    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    headers = {"Content-Type": "application/json"}
+    payload = {"contents": user_memories[chat_id]}
+
     try:
-        chat = model.start_chat(history=history)
-        response = chat.send_message(user_text)
-        ai_reply = response.text
+        response = requests.post(url, headers=headers, json=payload, timeout=30)
+        res_data = response.json()
 
-        full_history = chat.get_history()
+        
+        if "candidates" in res_data and res_data["candidates"]:
+            ai_reply = res_data["candidates"][0]["content"]["parts"][0]["text"]
+            
+           
+            user_memories[chat_id].append({"role": "model", "parts": [{"text": ai_reply}]})
 
-        while len(full_history) > (MAX_MEMORY_ROUNDS * 2):
-            full_history.pop(0)  
-            full_history.pop(0)  
+            
+            while len(user_memories[chat_id]) > (MAX_MEMORY_ROUNDS * 2 + 2):
+                user_memories[chat_id].pop(2) 
+                user_memories[chat_id].pop(2)
 
-        user_memories[chat_id] = full_history
-        bot.reply_to(message, ai_reply)
+            bot.reply_to(message, ai_reply)
+        else:
+            
+            error_msg = res_data.get("error", {}).get("message", "Unknown API Error")
+            bot.reply_to(message, f"API Notice: {error_msg}")
+            user_memories[chat_id].pop()
 
     except Exception as e:
-        bot.reply_to(message, f"Learning Assistant Notice: {str(e)}")
+        bot.reply_to(message, f"Connection Notice: {str(e)}")
+        if user_memories[chat_id]:
+            user_memories[chat_id].pop()
 
 if __name__ == '__main__':
     print("Starting health check server...")
     threading.Thread(target=run_health_check, daemon=True).start()
-    print("Gemini English Tutor Bot is running...")
+    print("Gemini English Tutor Bot via Direct HTTP is running...")
     bot.infinity_polling()
