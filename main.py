@@ -11,8 +11,8 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 genai.configure(api_key=GEMINI_API_KEY)
 
-model = genai.GenerativeModel
-    model = genai.GenerativeModel(model_name='gemini-pro')
+
+model = genai.GenerativeModel(model_name='gemini-pro')
 
 user_memories = defaultdict(list)
 MAX_MEMORY_ROUNDS = 6  
@@ -33,6 +33,7 @@ def run_health_check():
 def send_welcome(message):
     chat_id = message.chat.id
     welcome_text = "Hi! I'm your English tutor. Let's chat! How was your day today?"
+    
     prompt_setup = (
         "从现在开始，你是一位风趣幽默、非常有耐心的真人外教。你的目标是帮助用户通过日常闲聊提升英文对话能力。\n"
         "# Guidelines\n"
@@ -52,10 +53,6 @@ def send_welcome(message):
         {"role": "model", "parts": ["Understood. I will act as a patient English tutor, correct your mistakes in Chinese with bold text, and keep our chat natural and fun! Let's chat! How was your day today?"]}
     ]
     bot.reply_to(message, welcome_text)
-    
-    
-    user_memories[chat_id] = [{"role": "model", "parts": [welcome_text]}]
-    bot.reply_to(message, welcome_text)
 
 @bot.message_handler(func=lambda message: True)
 def chat_with_gemini(message):
@@ -65,7 +62,6 @@ def chat_with_gemini(message):
     if chat_id not in user_memories or not user_memories[chat_id]:
         user_memories[chat_id] = []
 
-    
     history = user_memories[chat_id]
     
     try:
@@ -73,17 +69,13 @@ def chat_with_gemini(message):
         response = chat.send_message(user_text)
         ai_reply = response.text
 
-    
         full_history = chat.get_history()
 
-       
         while len(full_history) > (MAX_MEMORY_ROUNDS * 2):
             full_history.pop(0)  
             full_history.pop(0)  
 
-       
         user_memories[chat_id] = full_history
-
         bot.reply_to(message, ai_reply)
 
     except Exception as e:
