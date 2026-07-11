@@ -66,7 +66,7 @@ def chat_with_gemini(message):
     user_memories[chat_id].append({"role": "user", "parts": [{"text": user_text}]})
     
    
-    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
     payload = {"contents": user_memories[chat_id]}
 
