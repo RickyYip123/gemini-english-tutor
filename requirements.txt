@@ -1,4 +1,2 @@
-Plaintext
-
 pyTelegramBotAPI
 google-generativeai
