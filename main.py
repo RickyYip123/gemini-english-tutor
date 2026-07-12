@@ -75,7 +75,7 @@ def chat_with_agnes(message):
     }
 
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=30)
+        response = requests.post(url, headers=headers, json=payload, timeout=60)
         res_data = response.json()
 
        
