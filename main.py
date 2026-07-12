@@ -81,6 +81,10 @@ def chat_with_agnes(message):
        
         if "choices" in res_data and res_data["choices"]:
             ai_reply = res_data["choices"][0]["message"]["content"]
+            print(f"====== 新消息 ======")
+            print(f"用户 [{chat_id}] 说: {user_text}")
+            print(f"AI 回复: {ai_reply}")
+            print(f"====================")
             
            
             user_memories[chat_id].append({"role": "assistant", "content": ai_reply})
@@ -100,6 +104,7 @@ def chat_with_agnes(message):
         bot.reply_to(message, f"Connection Notice: {str(e)}")
         if user_memories[chat_id]:
             user_memories[chat_id].pop()
+            
 
 if __name__ == '__main__':
     print("Starting health check server...")
