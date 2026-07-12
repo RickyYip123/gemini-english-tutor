@@ -15,11 +15,17 @@ MAX_MEMORY_ROUNDS = 6
 
 # 1. 网页健康检查服务器配置
 class HealthCheckHandler(BaseHTTPRequestHandler):
+    # 👇 新增这个方法，专门应对 UptimeRobot 的探测
+    def do_HEAD(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+
     def do_GET(self):
         self.send_response(200)
         self.send_header("Content-type", "text/plain")
         self.end_headers()
-        self.wfile.write(b"Chat Bot is alive!")
+        self.wfile.write(b"Bot is alive!")
 
 def run_health_check():
     port = int(os.getenv("PORT", 8080))
