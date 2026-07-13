@@ -67,7 +67,7 @@ def chat_with_assistant(message):
 
     user_memories[chat_id].append({"role": "user", "content": user_text})
     
-    model_name = "gemini-2.5-flash"
+    model_name = "gemini-3.5-flash"
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={GEMINI_API_KEY}"
     
     headers = {
